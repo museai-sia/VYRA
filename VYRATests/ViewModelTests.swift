@@ -53,7 +53,8 @@ final class ViewModelTests: XCTestCase {
         let service = FlippableService()
         let vm = HomeViewModel(metadataService: service)
         vm.urlString = youTubeURL
-        XCTAssertNil(await vm.fetchVideoInfo())
+        let firstResult = await vm.fetchVideoInfo()
+        XCTAssertNil(firstResult)
         XCTAssertEqual(vm.state, .failed)
         service.shouldFail = false
         let video = await vm.retry()
