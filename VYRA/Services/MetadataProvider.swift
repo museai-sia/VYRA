@@ -36,12 +36,15 @@ struct VideoMetadataService: VideoMetadataFetching {
         self.providers = providers
     }
 
-    /// App default: authorized-source skeleton + yt-dlp interface stub.
-    /// Real URLs therefore fail with a clear, actionable error instead of
-    /// silently receiving mock data presented as real. The mock provider
-    /// is injected only in tests and previews.
+    /// App default (Phase 3): direct-media provider first (a URL that
+    /// itself serves an .mp4/.mov/.m4a file), then the yt-dlp interface
+    /// stub (YouTube) and the authorized-source skeleton. Page URLs still
+    /// fail with a clear, actionable error instead of silently receiving
+    /// mock data presented as real. The mock provider is injected only in
+    /// tests and previews.
     static var appDefault: VideoMetadataService {
         VideoMetadataService(providers: [
+            DirectMediaProvider(),
             YtDlpIntegrationProvider(),
             AuthorizedSourceProvider()
         ])

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 enum AppTab: String, CaseIterable, Identifiable {
     case home
@@ -28,6 +29,7 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @State private var libraryViewModel = LibraryViewModel()
     @State private var settingsViewModel = SettingsViewModel()
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ZStack {
@@ -54,6 +56,10 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .tint(VYRATheme.primaryText)
+        .task {
+            // Phase 3: restore the persisted Library and verify files.
+            libraryViewModel.attach(modelContext: modelContext)
+        }
     }
 }
 

@@ -4,8 +4,8 @@ struct VideoPreviewView: View {
     @State private var viewModel: VideoPreviewViewModel
     var libraryViewModel: LibraryViewModel
 
-    init(video: Video, libraryViewModel: LibraryViewModel) {
-        _viewModel = State(initialValue: VideoPreviewViewModel(video: video))
+    init(video: Video, metadata: VideoMetadata? = nil, libraryViewModel: LibraryViewModel) {
+        _viewModel = State(initialValue: VideoPreviewViewModel(video: video, metadata: metadata))
         self.libraryViewModel = libraryViewModel
     }
 

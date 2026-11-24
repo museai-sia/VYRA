@@ -10,11 +10,11 @@ struct SettingsView: View {
                     section(title: "アプリ情報") {
                         row("アプリ名", viewModel.appName)
                         row("バージョン", viewModel.versionText)
-                        row("フェーズ", "Phase 1 — UI / Mock")
+                        row("フェーズ", "Phase 3 — Download / Library")
                     }
                     section(title: "保存先") {
                         row("保存先", viewModel.saveLocationText)
-                        Text("Phase 1では実際のファイル保存は行いません。")
+                        Text("ダウンロードしたファイルはアプリのDocuments内に保存され、Libraryで管理します。ダウンロードはアプリ表示中のみ継続します。")
                             .font(.footnote)
                             .foregroundStyle(VYRATheme.secondary)
                     }
@@ -27,7 +27,7 @@ struct SettingsView: View {
                         .accessibilityIdentifier("clear-cache-button")
                     }
                     section(title: "ライセンス") {
-                        Text("VYRA Phase 1は外部ライブラリを使用していません。SwiftUI、SwiftData、SF SymbolsなどApple標準フレームワークのみで構成されています。")
+                        Text("VYRAは外部ライブラリを使用していません。SwiftUI、SwiftData、SF SymbolsなどApple標準フレームワークのみで構成されています。")
                             .font(.footnote)
                             .foregroundStyle(VYRATheme.secondary)
                     }
