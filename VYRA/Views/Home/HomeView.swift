@@ -15,7 +15,8 @@ struct HomeView: View {
 
                     PrimaryButton(
                         title: "動画情報を取得",
-                        isLoading: viewModel.isLoading
+                        isLoading: viewModel.isLoading,
+                        isEnabled: !viewModel.isLoading
                     ) {
                         Task {
                             if let video = await viewModel.fetchVideoInfo() {
@@ -24,6 +25,17 @@ struct HomeView: View {
                         }
                     }
                     .accessibilityIdentifier("fetch-button")
+
+                    if viewModel.state == .failed {
+                        GlassIconButton(symbolName: "arrow.clockwise", label: "再試行") {
+                            Task {
+                                if let video = await viewModel.retry() {
+                                    navigationPath.append(video)
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("retry-button")
+                    }
 
                     Divider().overlay(VYRATheme.secondary.opacity(0.4))
 
@@ -66,7 +78,7 @@ struct HomeView: View {
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(VYRATheme.primaryText)
                 .accessibilityIdentifier("home-headline")
-            Text("動画のURLを貼り付けて、情報を確認してから保存形式を選べます。（Phase 1: モック）")
+            Text("動画のURLを貼り付けて、情報を確認してから保存形式を選べます。")
                 .font(.subheadline)
                 .foregroundStyle(VYRATheme.secondary)
         }
@@ -82,6 +94,26 @@ struct HomeView: View {
                 Text("保存済み \(libraryViewModel.count) 件")
                     .font(.footnote)
                     .foregroundStyle(VYRATheme.secondary)
+            }
+            if !viewModel.recentFetches.isEmpty {
+                ForEach(viewModel.recentFetches.prefix(3)) { metadata in
+                    HStack(spacing: 10) {
+                        Image(systemName: "play.rectangle")
+                            .foregroundStyle(VYRATheme.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(metadata.title)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(VYRATheme.primaryText)
+                                .lineLimit(1)
+                            Text("\(metadata.creatorName) · \(metadata.formattedDuration)")
+                                .font(.caption)
+                                .foregroundStyle(VYRATheme.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                    }
+                }
+                .accessibilityIdentifier("home-recent-fetches")
             }
             if libraryViewModel.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {

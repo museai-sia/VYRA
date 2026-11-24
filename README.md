@@ -1,8 +1,14 @@
 # VYRA
 
-iPhone専用 SwiftUI アプリ「VYRA」の Phase 1 実装です。
+iPhone専用 SwiftUI アプリ「VYRA」の Phase 1 + Phase 2 実装です。
 
-動画URLを入力し、動画情報を確認し、保存形式を選んでファイルを管理する——という体験を、**すべてモックデータ**で動作するUIとして実装しています。実際の動画ダウンロード、yt-dlp、FFmpeg、外部API通信は Phase 1 には含まれません。
+動画URLを入力し、動画情報を確認し、保存形式を選んでファイルを管理する——という体験を提供します。Phase 2（改訂仕様）では、URL解析と `MetadataProvider` 設計によるメタデータ取得基盤、ViewModel連携、Phase 3 に向けたダウンロード権限の設計を実装しました。
+
+方針（Phase 2 で確定）:
+- **YouTube Data API には依存しません**（APIキー/Secrets 不要）。
+- **yt-dlp は組み込みません。** 調査の結果、iOS では CPython / ffmpeg / JavaScript ランタイムの要件とサンドボックスの制約（外部プロセス起動禁止）によりアプリ内実行は実現不可能で、署名回避の観点でも不適合と判断しました（根拠: `Documentation/Phases/PHASE_2_METADATA.md`）。
+- 利用許可が確認できたプロバイダだけが実データを返します。未設定のソースでは「取得元が未設定です」等の明確なエラーを表示し、モックを実データとして見せることはしません。モックプロバイダはテスト/プレビュー専用です。
+- 実際の動画ダウンロードは Phase 2 に含まれません。
 
 ## 技術構成
 
@@ -22,6 +28,7 @@ Home / Video Preview（形式・品質選択を含む）/ Download Confirmation 
 
 - ワークフロー: `.github/workflows/ios-build.yml`（main への push / Pull Request で起動）
 - Simulator向けビルド（コード署名なし）、Unit Test / UI Test の実行、ログと `.xcresult` の Artifacts 保存を行います。
+- Secrets や外部ネットワークなしで、ビルド・テストが成功する構成です。
 
 ローカル（Macがある場合）:
 
@@ -32,10 +39,10 @@ xcodebuild test  -project VYRA.xcodeproj -scheme VYRA -destination 'platform=iOS
 
 ## ドキュメント
 
-詳細は `Documentation/` を参照してください。入口は `AGENTS.md` と `Documentation/MASTER.md`、引き継ぎは `Documentation/HANDOFF/PHASE_1_HANDOFF.md` です。
+詳細は `Documentation/` を参照してください。入口は `AGENTS.md` と `Documentation/MASTER.md`、引き継ぎは `Documentation/HANDOFF/PHASE_2_HANDOFF.md`（Phase 1 は `PHASE_1_HANDOFF.md`）です。
 
 ## フェーズ
 
-- Phase 1: UI / モック動作（本リポジトリの範囲）
-- Phase 2: 動画メタデータ取得（予定のみ・未実装）
-- Phase 3: 実際のファイル取得（予定のみ・未実装）
+- Phase 1: UI / モック動作（完了）
+- Phase 2: URL解析・MetadataProvider によるメタデータ取得基盤・権限設計（完了、改訂仕様準拠）
+- Phase 3: 実際のファイル取得（予定のみ・未実装、明示承認が必要）

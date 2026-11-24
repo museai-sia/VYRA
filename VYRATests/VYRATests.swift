@@ -34,7 +34,7 @@ final class VYRATests: XCTestCase {
     }
 
     func testHomeViewModelRejectsInvalidURL() async {
-        let vm = HomeViewModel(metadataService: MockVideoMetadataService(delayNanoseconds: 0))
+        let vm = HomeViewModel(metadataService: MockMetadataProvider(delayNanoseconds: 0))
         vm.urlString = "invalid"
         let result = await vm.fetchVideoInfo()
         XCTAssertNil(result)
@@ -59,23 +59,26 @@ final class VYRATests: XCTestCase {
     // MARK: - Mock metadata (spec item 6)
 
     func testMockMetadataFetch() async throws {
-        let service = MockVideoMetadataService(delayNanoseconds: 0)
-        let url = try XCTUnwrap(URL(string: "https://example.com/watch/42"))
-        let video = try await service.fetchMetadata(for: url)
-        XCTAssertFalse(video.title.isEmpty)
-        XCTAssertFalse(video.author.isEmpty)
-        XCTAssertGreaterThan(video.durationSeconds, 0)
-        XCTAssertEqual(video.sourceURLString, url.absoluteString)
+        let service = MockMetadataProvider(delayNanoseconds: 0)
+        let url = try XCTUnwrap(URL(string: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
+        let metadata = try await service.fetchMetadata(for: url)
+        XCTAssertFalse(metadata.title.isEmpty)
+        XCTAssertFalse(metadata.creatorName.isEmpty)
+        XCTAssertGreaterThan(metadata.durationSeconds, 0)
+        XCTAssertEqual(metadata.sourceURL, url)
+        XCTAssertEqual(metadata.id, "dQw4w9WgXcQ")
     }
 
     func testHomeViewModelFetchesMockVideo() async {
-        let vm = HomeViewModel(metadataService: MockVideoMetadataService(delayNanoseconds: 0))
-        vm.urlString = "https://example.com/watch/42"
+        let vm = HomeViewModel(metadataService: MockMetadataProvider(delayNanoseconds: 0))
+        vm.urlString = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         let video = await vm.fetchVideoInfo()
         XCTAssertNotNil(video)
         XCTAssertEqual(vm.fetchedVideo, video)
         XCTAssertNil(vm.errorMessage)
         XCTAssertFalse(vm.isLoading)
+        XCTAssertEqual(vm.state, .loaded)
+        XCTAssertEqual(vm.recentFetches.count, 1)
     }
 
     // MARK: - Format & quality (spec items 7, 8, 9)
