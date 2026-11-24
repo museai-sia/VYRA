@@ -2,9 +2,13 @@
 
 iPhone専用 SwiftUI アプリ「VYRA」の Phase 1 + Phase 2 実装です。
 
-動画URLを入力し、動画情報を確認し、保存形式を選んでファイルを管理する——という体験を提供します。Phase 2 では YouTube URL の解析と、公式 YouTube Data API v3 による動画メタデータ（タイトル / チャンネル名 / サムネイル / 時間 / 公開日 / 説明）の取得・表示を実装しました。実際の動画ダウンロード、yt-dlp、FFmpeg、スクレイピングは含まれません。
+動画URLを入力し、動画情報を確認し、保存形式を選んでファイルを管理する——という体験を提供します。Phase 2（改訂仕様）では、URL解析と `MetadataProvider` 設計によるメタデータ取得基盤、ViewModel連携、Phase 3 に向けたダウンロード権限の設計を実装しました。
 
-※ YouTube API キー（GitHub Secret `YOUTUBE_API_KEY`）が未設定の環境では、アプリはモックを実データとして見せず「APIキー未設定」エラーを表示します。実API通信はキー設定後に要検証です。
+方針（Phase 2 で確定）:
+- **YouTube Data API には依存しません**（APIキー/Secrets 不要）。
+- **yt-dlp は組み込みません。** 調査の結果、iOS では CPython / ffmpeg / JavaScript ランタイムの要件とサンドボックスの制約（外部プロセス起動禁止）によりアプリ内実行は実現不可能で、署名回避の観点でも不適合と判断しました（根拠: `Documentation/Phases/PHASE_2_METADATA.md`）。
+- 利用許可が確認できたプロバイダだけが実データを返します。未設定のソースでは「取得元が未設定です」等の明確なエラーを表示し、モックを実データとして見せることはしません。モックプロバイダはテスト/プレビュー専用です。
+- 実際の動画ダウンロードは Phase 2 に含まれません。
 
 ## 技術構成
 
@@ -24,7 +28,7 @@ Home / Video Preview（形式・品質選択を含む）/ Download Confirmation 
 
 - ワークフロー: `.github/workflows/ios-build.yml`（main への push / Pull Request で起動）
 - Simulator向けビルド（コード署名なし）、Unit Test / UI Test の実行、ログと `.xcresult` の Artifacts 保存を行います。
-- Secrets が未設定でも、スタブ/モックによるビルド・テストは成功する構成です。
+- Secrets や外部ネットワークなしで、ビルド・テストが成功する構成です。
 
 ローカル（Macがある場合）:
 
@@ -40,5 +44,5 @@ xcodebuild test  -project VYRA.xcodeproj -scheme VYRA -destination 'platform=iOS
 ## フェーズ
 
 - Phase 1: UI / モック動作（完了）
-- Phase 2: YouTube URL解析・公式APIによるメタデータ取得（完了。実API通信はキー未設定のため未検証）
+- Phase 2: URL解析・MetadataProvider によるメタデータ取得基盤・権限設計（完了、改訂仕様準拠）
 - Phase 3: 実際のファイル取得（予定のみ・未実装、明示承認が必要）
