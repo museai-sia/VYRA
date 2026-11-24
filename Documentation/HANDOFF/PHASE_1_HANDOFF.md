@@ -8,8 +8,8 @@
 
 ## 2. 使用バージョン
 
-- Swift 5.9（SWIFT_VERSION=5.9）、SwiftUI / SwiftData
-- Xcode 26 SDK 想定（GitHub Actions の macos-26 ランナーで選択される最新26系。確定値は Actions ログで確認すること）
+- Swift 言語モード 5.9（SWIFT_VERSION=5.9）、SwiftUI / SwiftData。ランナーのツールチェインは Apple Swift 6.3.3
+- Xcode 26.6（Build 17F113）、iOS Simulator SDK 26.5、テスト実行シミュレータ: iPhone 17 Pro（いずれも GitHub Actions run 45372323350 のログで確認済み）
 
 ## 3. Deployment Target
 
@@ -26,11 +26,15 @@ main への push / Pull Request で `.github/workflows/ios-build.yml` が自動�
 
 ## 6. 最新のビルド結果
 
-GitHub Actions実行待ち（本ドキュメント作成時点では未実行。成功と断定しないこと）。実行後にここへ結果と run URL を追記すること。
+成功。GitHub Actions run 45372323350（2026-11-24、所要 4分14秒）で `** BUILD SUCCEEDED **` を確認。
+URL: https://github.com/museai-sia/VYRA/actions/runs/45372323350
+経緯: run 45372041269 は SDKROOT 未指定で宛先エラー、run 45372205953 は同名ファイル衝突で失敗し、いずれも修正済み（コミット a5eee2f、a2058d2）。
+Artifacts: `vyra-build-logs-and-results`（build.log / test.log / TestResults.xcresult / launch.png）に保存（保持14日）。
 
 ## 7. 最新のテスト結果
 
-GitHub Actions実行待ち。Unit Test 27件（VYRATests）、UI Test 4件（VYRAUITests、起動テスト含む）を用意済み。実行後に成功/失敗数を追記すること。
+成功。run 45372323350 で `** TEST SUCCEEDED **` を確認。テスト総数31件（Unit 27件 + UI 4件）、成功31件、失敗0件。
+内訳の検証は test.log の Test case 行を集計（ユニーク31件すべて passed）。
 
 ## 8. 実装済み画面
 
@@ -66,13 +70,14 @@ VideoMetadataService / DownloadService ともに protocol + Mock 実装（MockVi
 
 ## 15. 既知の問題
 
-- ローカル（Linux）ではコンパイル確認ができないため、Swift / SwiftUI のコンパイル可否は GitHub Actions の結果でのみ確定する。
-- スクリーンショットの自動取得はベストエフォート（ワークフロー内コメントと手動手順を参照）。
+- ローカル（Linux）ではコンパイル確認ができないため、Swift / SwiftUI のコンパイル可否は GitHub Actions の結果でのみ確定する（Phase 1 コードは run 45372323350 で成功確認済み）。
+- スクリーンショットは Home（起動画面）のみ自動取得をワークフローに組み込み済み（ベストエフォート、continue-on-error）。その他の画面は手動手順（ワークフロー内コメント）参照で未自動化。
+- Download Confirmation への遷移は NavigationLink の destination で downloadItem を生成する方式。UIテストの自動検証範囲外のため、実機/シミュレータでの目視確認が望ましい。
+- SwiftData は ModelContainer の設定までで、Library の永続化は未実装（画面は LibraryViewModel のインメモリ配列が正）。
 
 ## 16. 未解決の問題
 
-- GitHub Actions の初回実行結果の確認と、失敗時のエラー修正（未実施）。
-- AGENTS.md の現在フェーズ表記を「Phase 1 Completed / Phase 2 Pending Approval」へ更新するのは、Actions 成功確認後（親担当）。
+- なし（Phase 1 の DoD 範囲）。Phase 2 は開発者の明示承認があるまで開始しない。
 
 ## 17. 関連ファイルパス
 
@@ -82,7 +87,8 @@ VideoMetadataService / DownloadService ともに protocol + Mock 実装（MockVi
 
 ## 18. 最新のコミットID
 
-ローカル初回コミットのIDは `git log -1 --format=%H` で確認すること（本ドキュメントには自己参照になるため記載しない）。
+Phase 1 のコードとしてビルド・テスト成功を確認したコミット: `a2058d284cd541745ee71412ddfabea4b002293a`（Rename download progress screen file...）。
+本ハンドオフ更新を含むドキュメントコミットがこの後に続く。正確な最新IDは `git log -1 --format=%H` で確認すること。
 
 ## 19. 次フェーズの開始手順
 

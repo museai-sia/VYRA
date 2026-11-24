@@ -4,8 +4,7 @@
 
 ## 現在フェーズ
 
-Phase 1 実装済み（ローカル） / GitHub Actions でのビルド確認待ち。
-最終表記は、Actions のビルド・テスト成功を確認後に「Phase 1 Completed / Phase 2 Pending Approval」へ更新すること（親担当）。
+Phase 1 Completed / Phase 2 Pending Approval
 
 ## 作業前に読むもの（Phase 1）
 
