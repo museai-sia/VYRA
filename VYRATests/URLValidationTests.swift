@@ -98,6 +98,42 @@ final class URLValidationTests: XCTestCase {
         }
     }
 
+    // MARK: - Generalized validation (revised Phase 2 spec)
+
+    func testValidateClassifiesYouTube() throws {
+        let result = try URLValidationService.validate("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        XCTAssertEqual(result.kind, .youtube)
+        XCTAssertEqual(result.videoID, "dQw4w9WgXcQ")
+    }
+
+    func testValidateClassifiesGenericHTTPS() throws {
+        let result = try URLValidationService.validate("https://example.com/video/123")
+        XCTAssertEqual(result.kind, .genericHTTPS)
+        XCTAssertNil(result.videoID)
+    }
+
+    func testValidateRejectsNonHTTPS() {
+        XCTAssertThrowsError(try URLValidationService.validate("http://www.youtube.com/watch?v=dQw4w9WgXcQ")) {
+            XCTAssertEqual($0 as? URLValidationError, .invalidFormat)
+        }
+        XCTAssertThrowsError(try URLValidationService.validate("ftp://example.com/video")) {
+            XCTAssertEqual($0 as? URLValidationError, .invalidFormat)
+        }
+    }
+
+    func testValidateRejectsLookalikeHosts() {
+        XCTAssertThrowsError(try URLValidationService.validate("https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ")) {
+            XCTAssertEqual($0 as? URLValidationError, .unsupportedHost)
+        }
+    }
+
+    func testClassify() {
+        XCTAssertEqual(URLValidationService.classify(host: "www.youtube.com"), .youtube)
+        XCTAssertEqual(URLValidationService.classify(host: "youtu.be"), .youtube)
+        XCTAssertEqual(URLValidationService.classify(host: "example.com"), .genericHTTPS)
+        XCTAssertEqual(URLValidationService.classify(host: "notyoutube.com"), .unsupported)
+    }
+
     func testGenericValidatorStillAcceptsExampleCom() {
         // Phase 1 generic syntax validation is preserved.
         XCTAssertTrue(URLValidator.isValidVideoURL("https://example.com/video/123"))

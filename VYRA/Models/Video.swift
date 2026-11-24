@@ -47,9 +47,9 @@ struct Video: Identifiable, Equatable, Hashable, Codable, Sendable {
     init(metadata: VideoMetadata) {
         self.init(
             title: metadata.title,
-            author: metadata.channelTitle,
+            author: metadata.creatorName,
             durationSeconds: metadata.durationSeconds,
-            sourceName: "YouTube",
+            sourceName: metadata.sourceName,
             sourceURLString: metadata.sourceURL.absoluteString,
             thumbnailSymbol: "play.rectangle.fill",
             externalID: metadata.id,

@@ -78,7 +78,7 @@ struct HomeView: View {
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(VYRATheme.primaryText)
                 .accessibilityIdentifier("home-headline")
-            Text("YouTubeの動画URLを貼り付けて、情報を確認してから保存形式を選べます。")
+            Text("動画のURLを貼り付けて、情報を確認してから保存形式を選べます。")
                 .font(.subheadline)
                 .foregroundStyle(VYRATheme.secondary)
         }
@@ -105,7 +105,7 @@ struct HomeView: View {
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(VYRATheme.primaryText)
                                 .lineLimit(1)
-                            Text("\(metadata.channelTitle) · \(metadata.formattedDuration)")
+                            Text("\(metadata.creatorName) · \(metadata.formattedDuration)")
                                 .font(.caption)
                                 .foregroundStyle(VYRATheme.secondary)
                                 .lineLimit(1)

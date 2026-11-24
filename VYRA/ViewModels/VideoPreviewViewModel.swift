@@ -22,7 +22,7 @@ final class VideoPreviewViewModel {
     // MARK: - Metadata-backed display data
 
     var titleText: String { metadata?.title ?? video.title }
-    var channelText: String { metadata?.channelTitle ?? video.author }
+    var channelText: String { metadata?.creatorName ?? video.author }
     var durationText: String { metadata?.formattedDuration ?? video.formattedDuration }
     var sourceText: String { video.sourceName }
     var sourceURLString: String { metadata?.sourceURL.absoluteString ?? video.sourceURLString }

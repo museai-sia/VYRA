@@ -2,15 +2,23 @@ import Foundation
 
 /// App-internal video metadata model (Phase 2). `id` is the source's
 /// video ID (for YouTube, the 11-character video ID), not a UUID.
+/// Unknown values are always nil — never guessed or filled in.
 struct VideoMetadata: Codable, Identifiable, Equatable, Sendable {
     let id: String
     var title: String
-    var channelTitle: String
+    /// Creator / channel name (mapped to `Video.author` for display).
+    var creatorName: String
+    /// Human-readable source name, e.g. "YouTube" or "Mock".
+    var sourceName: String
     var thumbnailURL: URL?
     var durationSeconds: Int
     var publishedAt: Date?
     var description: String?
     var sourceURL: URL
+    /// Only populated when the source's download permission is verified
+    /// (see DownloadCapability). Default nil: metadata alone never
+    /// implies downloadable formats.
+    var availableFormats: [AvailableMediaFormat]? = nil
 
     var formattedDuration: String {
         let h = durationSeconds / 3600

@@ -1,8 +1,8 @@
 import XCTest
 @testable import VYRA
 
-/// Service stub whose behaviour can be flipped between calls (for retry).
-final class FlippableService: VideoMetadataService, @unchecked Sendable {
+/// Fetch stub whose behaviour can be flipped between calls (for retry).
+final class FlippableService: VideoMetadataFetching, @unchecked Sendable {
     var shouldFail = true
     var delayNanoseconds: UInt64 = 0
     private(set) var callCount = 0
@@ -10,9 +10,9 @@ final class FlippableService: VideoMetadataService, @unchecked Sendable {
     func fetchMetadata(for url: URL) async throws -> VideoMetadata {
         callCount += 1
         if delayNanoseconds > 0 { try await Task.sleep(nanoseconds: delayNanoseconds) }
-        if shouldFail { throw VideoMetadataError.network("stub failure") }
+        if shouldFail { throw MetadataError.network("stub failure") }
         return VideoMetadata(
-            id: "dQw4w9WgXcQ", title: "Fetched", channelTitle: "Channel",
+            id: "dQw4w9WgXcQ", title: "Fetched", creatorName: "Channel", sourceName: "Stub",
             thumbnailURL: nil, durationSeconds: 60, publishedAt: nil,
             description: nil, sourceURL: url
         )
@@ -70,7 +70,6 @@ final class ViewModelTests: XCTestCase {
         let vm = HomeViewModel(metadataService: service)
         vm.urlString = youTubeURL
         let first = Task { await vm.fetchVideoInfo() }
-        // Let the first fetch start.
         try? await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertTrue(vm.isLoading)
         let second = await vm.fetchVideoInfo()
@@ -95,22 +94,41 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(vm.state, .idle)
     }
 
-    func testUnsupportedURLFailsWithActionableMessage() async {
-        let vm = HomeViewModel(metadataService: MockVideoMetadataService(delayNanoseconds: 0))
-        vm.urlString = "https://example.com/watch?v=dQw4w9WgXcQ"
+    func testLookalikeHostFailsWithActionableMessage() async {
+        let vm = HomeViewModel(metadataService: MockMetadataProvider(delayNanoseconds: 0))
+        vm.urlString = "https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ"
         let video = await vm.fetchVideoInfo()
         XCTAssertNil(video)
         XCTAssertEqual(vm.state, .failed)
-        XCTAssertTrue(vm.errorMessage?.contains("YouTube") ?? false)
+        XCTAssertNotNil(vm.errorMessage)
     }
 
-    func testAPIKeyMissingMessage() async {
-        let vm = HomeViewModel(metadataService: UnconfiguredVideoMetadataService())
+    func testDefaultWiringYouTubeFailsWithUnconfiguredMessage() async {
+        // App default (aggregator: yt-dlp stub + authorized skeleton) must
+        // fail honestly for a YouTube URL — never mock data as real.
+        let vm = HomeViewModel()
         vm.urlString = youTubeURL
         let video = await vm.fetchVideoInfo()
         XCTAssertNil(video)
         XCTAssertEqual(vm.state, .failed)
-        XCTAssertTrue(vm.errorMessage?.contains("APIキー") ?? false)
+        XCTAssertTrue(vm.errorMessage?.contains("未設定") ?? false)
+    }
+
+    func testDefaultWiringForeignHostFailsWithPermissionMessage() async {
+        let vm = HomeViewModel()
+        vm.urlString = "https://example.com/video"
+        let video = await vm.fetchVideoInfo()
+        XCTAssertNil(video)
+        XCTAssertEqual(vm.state, .failed)
+        XCTAssertTrue(vm.errorMessage?.contains("許可") ?? false)
+    }
+
+    func testNonHTTPSRejectedByViewModel() async {
+        let vm = HomeViewModel(metadataService: MockMetadataProvider(delayNanoseconds: 0))
+        vm.urlString = "http://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        let video = await vm.fetchVideoInfo()
+        XCTAssertNil(video)
+        XCTAssertEqual(vm.state, .failed)
     }
 
     func testRecentFetchesDeduplicated() async {
@@ -125,7 +143,7 @@ final class ViewModelTests: XCTestCase {
 
     func testPreviewViewModelExposesMetadata() {
         let metadata = VideoMetadata(
-            id: "dQw4w9WgXcQ", title: "Real Title", channelTitle: "Real Channel",
+            id: "dQw4w9WgXcQ", title: "Real Title", creatorName: "Real Channel", sourceName: "YouTube",
             thumbnailURL: URL(string: "https://i.ytimg.com/vi/x/hq.jpg"),
             durationSeconds: 3723, publishedAt: Date(timeIntervalSince1970: 1_700_000_000),
             description: "Desc",
