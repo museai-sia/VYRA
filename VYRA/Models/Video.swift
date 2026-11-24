@@ -10,6 +10,12 @@ struct Video: Identifiable, Equatable, Hashable, Codable, Sendable {
     var sourceURLString: String
     /// SF Symbol used as the placeholder thumbnail artwork (monochrome).
     var thumbnailSymbol: String
+    /// Phase 2 bridging fields (all optional, defaulted so Phase 1 code
+    /// and existing initializers keep compiling unchanged).
+    var externalID: String? = nil
+    var thumbnailURL: URL? = nil
+    var publishedAt: Date? = nil
+    var descriptionText: String? = nil
 
     init(
         id: UUID = UUID(),
@@ -18,7 +24,11 @@ struct Video: Identifiable, Equatable, Hashable, Codable, Sendable {
         durationSeconds: Int,
         sourceName: String,
         sourceURLString: String,
-        thumbnailSymbol: String = "play.rectangle.fill"
+        thumbnailSymbol: String = "play.rectangle.fill",
+        externalID: String? = nil,
+        thumbnailURL: URL? = nil,
+        publishedAt: Date? = nil,
+        descriptionText: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -27,6 +37,26 @@ struct Video: Identifiable, Equatable, Hashable, Codable, Sendable {
         self.sourceName = sourceName
         self.sourceURLString = sourceURLString
         self.thumbnailSymbol = thumbnailSymbol
+        self.externalID = externalID
+        self.thumbnailURL = thumbnailURL
+        self.publishedAt = publishedAt
+        self.descriptionText = descriptionText
+    }
+
+    /// Bridges Phase 2 metadata into the Phase 1 display model.
+    init(metadata: VideoMetadata) {
+        self.init(
+            title: metadata.title,
+            author: metadata.channelTitle,
+            durationSeconds: metadata.durationSeconds,
+            sourceName: "YouTube",
+            sourceURLString: metadata.sourceURL.absoluteString,
+            thumbnailSymbol: "play.rectangle.fill",
+            externalID: metadata.id,
+            thumbnailURL: metadata.thumbnailURL,
+            publishedAt: metadata.publishedAt,
+            descriptionText: metadata.description
+        )
     }
 
     var formattedDuration: String {

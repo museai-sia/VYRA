@@ -5,11 +5,37 @@ import Observation
 @Observable
 final class VideoPreviewViewModel {
     let video: Video
+    /// Phase 2 metadata backing this preview, when it came from a fetch.
+    let metadata: VideoMetadata?
     var selectedFormat: DownloadFormat = .mp4
     var selectedQuality: DownloadQuality = .p720
 
-    init(video: Video) {
+    init(video: Video, metadata: VideoMetadata? = nil) {
         self.video = video
+        self.metadata = metadata
+    }
+
+    convenience init(metadata: VideoMetadata) {
+        self.init(video: Video(metadata: metadata), metadata: metadata)
+    }
+
+    // MARK: - Metadata-backed display data
+
+    var titleText: String { metadata?.title ?? video.title }
+    var channelText: String { metadata?.channelTitle ?? video.author }
+    var durationText: String { metadata?.formattedDuration ?? video.formattedDuration }
+    var sourceText: String { video.sourceName }
+    var sourceURLString: String { metadata?.sourceURL.absoluteString ?? video.sourceURLString }
+    var thumbnailURL: URL? { metadata?.thumbnailURL ?? video.thumbnailURL }
+    var descriptionText: String? { metadata?.description ?? video.descriptionText }
+
+    var publishedDateText: String? {
+        guard let date = metadata?.publishedAt ?? video.publishedAt else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
     }
 
     /// Audio-only formats have no video quality choice.

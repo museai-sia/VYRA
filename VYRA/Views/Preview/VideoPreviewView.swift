@@ -12,23 +12,46 @@ struct VideoPreviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VideoThumbnailView(symbolName: viewModel.video.thumbnailSymbol,
-                                   durationText: viewModel.video.formattedDuration)
+                if let thumbnailURL = viewModel.thumbnailURL {
+                    AsyncImage(url: thumbnailURL) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        VideoThumbnailView(symbolName: viewModel.video.thumbnailSymbol,
+                                           durationText: viewModel.durationText)
+                    }
+                    .aspectRatio(16 / 9, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("video-thumbnail-image")
+                } else {
+                    VideoThumbnailView(symbolName: viewModel.video.thumbnailSymbol,
+                                       durationText: viewModel.durationText)
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(viewModel.video.title)
+                    Text(viewModel.titleText)
                         .font(.title3.weight(.bold))
                         .foregroundStyle(VYRATheme.primaryText)
                         .accessibilityIdentifier("video-title")
-                    Text(viewModel.video.author)
+                    Text(viewModel.channelText)
                         .font(.subheadline)
                         .foregroundStyle(VYRATheme.secondary)
                     HStack(spacing: 14) {
-                        Label(viewModel.video.formattedDuration, systemImage: "clock")
-                        Label(viewModel.video.sourceName, systemImage: "globe")
+                        Label(viewModel.durationText, systemImage: "clock")
+                        Label(viewModel.sourceText, systemImage: "globe")
+                        if let publishedDateText = viewModel.publishedDateText {
+                            Label(publishedDateText, systemImage: "calendar")
+                        }
                     }
                     .font(.footnote)
                     .foregroundStyle(VYRATheme.secondary)
+                    if let descriptionText = viewModel.descriptionText, !descriptionText.isEmpty {
+                        Text(descriptionText)
+                            .font(.footnote)
+                            .foregroundStyle(VYRATheme.secondary)
+                            .lineLimit(3)
+                    }
                 }
 
                 Divider().overlay(VYRATheme.secondary.opacity(0.4))
