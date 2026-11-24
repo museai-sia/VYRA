@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [1.2.0] — Phase 3（ダウンロード・保存・Library 完成）
+
+- ダウンロードエンジン: yt-dlp は組み込まず（iOS 実行不可能、Phase 2 調査を踏襲）、直接 HTTPS メディアファイル URL 専用の `URLSessionDownloadEngine` を `DownloadService` プロトコルの背後に実装。ページ URL は `DirectMediaResolver` が開始前に拒否し、明確なエラーで失敗する。
+- `DirectMediaProvider` を追加し、集約の既定配線に接続: 直接ファイル URL（.mp4/.mov/.m4a）は HEAD で確認し、ファイル自身の形式のみを `availableFormats` とする。
+- `DownloadTaskManager` を追加: 開始・実進捗・キャンセル（タスク停止 + 一時ファイル処理、Library 未登録）・再試行（新規タスク）・複数タスク・状態遷移検証。Phase 2 の `DownloadManager` プロトコルは `DownloadCapabilityEvaluating` に改名。
+- `DownloadState` に queued / preparing を追加（waiting は互換維持）。paused は再開を保証できないため実装しない。`DownloadProgress`（割合は総サイズ判明時のみ）と `DownloadError`（日本語 userMessage / ログ用詳細を分離）を追加。
+- `MediaFormatOption` / `MediaFormatService` を追加: 形式・品質の選択肢は実在する情報からのみ生成。M4A では品質 UI 非表示を維持。
+- `FileStorageService`（Documents/VYRA、一時領域、移動・削除・重複名解決・サイズ/存在確認）と `FileNameValidator`（サニタイズ・空拒否・拡張子保護）を追加。
+- Download Confirmation: ファイル名編集、判明している情報のみ表示、保存先表示、ダウンロード不可理由の表示。Download Progress: 実バイト数・速度・残り時間、総サイズ不明時は % 非表示。
+- Library: SwiftData 永続化（起動時復元・実ファイル確認・孤児レコード修復・中断分は failed 扱い）、AVKit 再生、実ファイル ShareLink、確認付き削除（ファイル + レコード同期）。モック追加ボタンは廃止。
+- テスト: `Phase3DownloadTests` を追加（マネージャ/ストレージ/ファイル名/状態遷移/形式/Library+SwiftData/URLProtocol スタブによるエンジン、全てオフライン）。
+- バックグラウンドダウンロードは実装しない（フォアグラウンドのみ、UI とドキュメントに明記）。実機 IPA 作成・インストールは未検証。
+
 ## [1.1.0] — Phase 2（改訂仕様: MetadataProvider 方式）
 
 - `URLValidationService` を追加・一般化: URLComponents による構造化解析、HTTPS必須、ソース種別分類（youtube / genericHTTPS / unsupported）、類似ホスト拒否。YouTube 形式（watch / youtu.be / shorts / embed / live）と動画ID検証（11文字）を維持。

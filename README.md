@@ -39,10 +39,10 @@ xcodebuild test  -project VYRA.xcodeproj -scheme VYRA -destination 'platform=iOS
 
 ## ドキュメント
 
-詳細は `Documentation/` を参照してください。入口は `AGENTS.md` と `Documentation/MASTER.md`、引き継ぎは `Documentation/HANDOFF/PHASE_2_HANDOFF.md`（Phase 1 は `PHASE_1_HANDOFF.md`）です。
+詳細は `Documentation/` を参照してください。入口は `AGENTS.md` と `Documentation/MASTER.md`、引き継ぎは `Documentation/HANDOFF/PHASE_3_HANDOFF.md`（Phase 2 は `PHASE_2_HANDOFF.md`、Phase 1 は `PHASE_1_HANDOFF.md`）です。
 
 ## フェーズ
 
 - Phase 1: UI / モック動作（完了）
 - Phase 2: URL解析・MetadataProvider によるメタデータ取得基盤・権限設計（完了、改訂仕様準拠）
-- Phase 3: 実際のファイル取得（予定のみ・未実装、明示承認が必要）
+- Phase 3: 実際のファイル取得・保存・Library 完成（完了。直接 HTTPS メディアファイル URL 専用の URLSession エンジン）

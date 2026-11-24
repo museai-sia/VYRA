@@ -10,7 +10,7 @@ VYRA は iPhone 専用の SwiftUI アプリ。動画URLを入力 → 動画情�
 |---|---|---|
 | Phase 1 | 全画面UI、モックデータによる全動作、GitHub Actions ビルド/テスト基盤 | 完了 |
 | Phase 2 | URL解析、MetadataProvider 設計によるメタデータ取得基盤、ViewModel連携、Phase 3 への権限設計 | **実装済み**（改訂仕様準拠。`Phases/PHASE_2_METADATA.md`、`HANDOFF/PHASE_2_HANDOFF.md`） |
-| Phase 3 | 実際のファイル取得・保存 | 予定のみ（`Phases/PHASE_3_DOWNLOAD.md`）。**実装禁止（開発者の明示承認が必要）** |
+| Phase 3 | 実際のファイル取得・保存、進捗管理、Library 完成 | **実装済み**（2026-11-24 開発者の明示承認により開始。`Phases/PHASE_3_DOWNLOAD.md`、`HANDOFF/PHASE_3_HANDOFF.md`） |
 
 ## Phase 2 の確定方針（改訂仕様）
 
@@ -26,7 +26,8 @@ Swift / SwiftUI / MVVM / SwiftData / Swift Concurrency / SF Symbols、iOS 26.0�
 ## 判断記録
 
 - Xcodeプロジェクトは PBXFileSystemSynchronizedRootGroup（フォルダ同期型）で手書きし、ファイル追加時の pbxproj 編集を不要にした。
-- SwiftData は `DownloadItem` の永続化モデルとして App に ModelContainer を設定。画面動作は LibraryViewModel のインメモリ配列を正とし、SwiftData への本格移行は将来フェーズの判断とする。
-- ファイルサイズは実測値ではなく、動画長と形式・品質から算出する推定値として、UI上も「推定（モック）」と明示する（Phase 3 のダウンロード側の話であり、メタデータとは無関係）。
+- SwiftData は `DownloadItem` の永続化モデルとして App に ModelContainer を設定。Phase 3 で Library は SwiftData を正とし、起動時に実ファイルの存在確認と修復を行う（判断理由は ARCHITECTURE.md）。
+- ファイルサイズ: Phase 1/2 の形式選択画面では推定値として「推定（モック）」と明示する。Phase 3 で実際にダウンロードしたファイルは実測サイズを保存し、推定値と区別する。取得できない情報は表示しない。
 - タブバーは標準 TabView ではなく、レイアウトフロー内に置くカスタム Liquid Glass フローティングバーとし、コンテンツと重ならないことを保証した。
 - Phase 2: 当初は公式API方式で実装を進めたが、改訂仕様により YouTube Data API 依存を撤去し、MetadataProvider 方式へ移行した（経緯は PHASE_2_HANDOFF 参照）。
+- Phase 3: ダウンロードエンジンは yt-dlp を組み込まず、直接 HTTPS メディアファイル URL 専用のネイティブ URLSession エンジンを `DownloadService` プロトコルの背後に採用した。ページ URL（YouTube watch 等）は開始前に拒否する。バックグラウンドダウンロードと paused 状態は、保証できないため実装しない（正直な制約として UI とドキュメントに明記）。
