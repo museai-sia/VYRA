@@ -9,7 +9,7 @@ struct URLInputView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             TextField(
-                "https://example.com/video",
+                "動画のURLを入力",
                 text: $viewModel.urlString
             )
             .font(.body)
