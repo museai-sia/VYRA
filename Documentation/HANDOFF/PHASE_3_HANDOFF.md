@@ -141,7 +141,9 @@ GitHub Actions run 45390003270（PR #2、コードコミット 55bc209）で確�
 - 成功 run（PR、コード）: https://github.com/museai-sia/VYRA/actions/runs/45390003270 — `** BUILD SUCCEEDED **` / `** TEST SUCCEEDED **`
 - 環境: Xcode 26.6、iOS Simulator SDK 26.5、テスト実行シミュレータ iPhone 17 Pro、ランナー macos-26。
 - Artifacts: `vyra-build-logs-and-results`（build.log / test.log / TestResults.xcresult / launch.png、保持14日）。
-- main の最終 run とマージコミットは、マージ後に本節へ追記する。
+- マージ: PR #2 を main へマージ。マージコミット `8df64d4dd28d220f8bcdc3de76f351830eb17ba5`。
+- 成功 run（main、マージコミット）: https://github.com/museai-sia/VYRA/actions/runs/45392979998 — `** BUILD SUCCEEDED **` / `** TEST SUCCEEDED **`（103件成功 / 0件失敗、Xcode 26.6 / iOS Simulator SDK 26.5 / iPhone 17 Pro）。
+- 本追記を含む最終ドキュメントコミットの run が main の最新結果となる。
 
 ## 13. 既知の問題
 
