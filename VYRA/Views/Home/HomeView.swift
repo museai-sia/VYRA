@@ -48,7 +48,7 @@ struct HomeView: View {
             .scrollDismissesKeyboard(.interactively)
             .background(VYRATheme.background)
             .navigationDestination(for: Video.self) { video in
-                VideoPreviewView(video: video, libraryViewModel: libraryViewModel)
+                VideoPreviewView(video: video, metadata: viewModel.fetchedMetadata, libraryViewModel: libraryViewModel)
             }
         }
     }

@@ -41,6 +41,69 @@ final class VideoPreviewViewModel {
     /// Audio-only formats have no video quality choice.
     var showsQualitySelection: Bool { !selectedFormat.isAudioOnly }
 
+    // MARK: - Phase 3: actually-available formats
+
+    /// Options derived ONLY from real information (spec §7): a direct
+    /// media file URL yields exactly its own format; verified metadata
+    /// yields its reported formats. When metadata is absent (Phase 1 mock
+    /// preview), this is empty and the legacy all-formats picker is used,
+    /// clearly labelled as mock behaviour.
+    var availableOptions: [MediaFormatOption] {
+        guard let metadata else { return [] }
+        if MediaFormatService.isDirectMediaURL(metadata.sourceURL) {
+            return MediaFormatService.optionsForDirectURL(metadata.sourceURL)
+        }
+        return MediaFormatService.options(from: metadata)
+    }
+
+    var hasVerifiedOptions: Bool { !availableOptions.isEmpty }
+
+    var availableFormats: [DownloadFormat] {
+        hasVerifiedOptions ? MediaFormatService.formats(from: availableOptions) : Array(DownloadFormat.allCases)
+    }
+
+    var availableQualities: [DownloadQuality] {
+        guard hasVerifiedOptions else { return Array(DownloadQuality.allCases) }
+        let qualities = MediaFormatService.qualities(for: selectedFormat, in: availableOptions)
+        return qualities.isEmpty ? [.original] : qualities
+    }
+
+    /// Keeps the selection inside the actually-available options.
+    func reconcileSelection() {
+        if hasVerifiedOptions, !availableFormats.contains(selectedFormat),
+           let first = availableFormats.first {
+            selectedFormat = first
+        }
+        if !availableQualities.contains(selectedQuality),
+           let first = availableQualities.first {
+            selectedQuality = first
+        }
+    }
+
+    var sourceURL: URL? { metadata?.sourceURL ?? URL(string: video.sourceURLString) }
+
+    /// Whether the current selection can really be downloaded, and why not.
+    var downloadResolution: DirectMediaResolver.Resolution? {
+        guard let sourceURL else { return nil }
+        return DirectMediaResolver.resolve(sourceURL: sourceURL, format: selectedFormat, metadata: metadata)
+    }
+
+    var isDownloadable: Bool {
+        if case .downloadable = downloadResolution { return true }
+        return false
+    }
+
+    var downloadUnavailableReason: String? {
+        if case .unavailable(let reason) = downloadResolution { return reason }
+        return nil
+    }
+
+    /// Known size for the current selection, when a real source reported
+    /// one. Never a guess: nil means "unknown" and the UI omits the row.
+    var knownFileSize: Int64? {
+        availableOptions.first(where: { $0.format == selectedFormat && $0.quality == selectedQuality })?.estimatedFileSize
+    }
+
     /// Base mock size (bytes) for a 720p MP4 of this video's duration.
     private var baseMockBytes: Double {
         Double(max(video.durationSeconds, 1)) * 95_000.0
@@ -84,10 +147,23 @@ final class VideoPreviewViewModel {
             fileName: suggestedFileName,
             format: selectedFormat,
             quality: selectedQuality,
-            fileSizeBytes: estimatedMockBytes,
+            fileSizeBytes: knownFileSize ?? estimatedMockBytes,
             state: .waiting,
             thumbnailSymbol: video.thumbnailSymbol,
-            sourceURLString: video.sourceURLString
+            sourceURLString: sourceURLString,
+            mimeType: MediaFormatOption.mimeType(forExtension: selectedFormat.fileExtension),
+            thumbnailURLString: thumbnailURL?.absoluteString,
+            durationSeconds: (metadata?.durationSeconds ?? video.durationSeconds) > 0
+                ? (metadata?.durationSeconds ?? video.durationSeconds) : nil
         )
+    }
+
+    /// Builds the item for the confirmation screen with a user-edited,
+    /// validated file name (extension protected, spec §8).
+    func makeDownloadItem(fileName: String) throws -> DownloadItem {
+        let validated = try FileNameValidator.validate(fileName: fileName, format: selectedFormat)
+        var item = makeDownloadItem()
+        item.fileName = validated
+        return item
     }
 }

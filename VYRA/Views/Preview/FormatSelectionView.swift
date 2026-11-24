@@ -11,10 +11,11 @@ struct FormatSelectionView: View {
                 Text("保存形式")
                     .font(.headline)
                     .foregroundStyle(VYRATheme.primaryText)
-                ForEach(DownloadFormat.allCases) { format in
+                ForEach(viewModel.availableFormats) { format in
                     Button {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             viewModel.selectedFormat = format
+                            viewModel.reconcileSelection()
                         }
                     } label: {
                         HStack {
@@ -35,7 +36,7 @@ struct FormatSelectionView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("format-\(format.rawValue)")
-                    if format != DownloadFormat.allCases.last {
+                    if format != viewModel.availableFormats.last {
                         Divider().overlay(VYRATheme.secondary.opacity(0.3))
                     }
                 }
@@ -47,7 +48,7 @@ struct FormatSelectionView: View {
                         .font(.headline)
                         .foregroundStyle(VYRATheme.primaryText)
                     HStack(spacing: 8) {
-                        ForEach(DownloadQuality.allCases) { quality in
+                        ForEach(viewModel.availableQualities) { quality in
                             Button {
                                 withAnimation(.easeInOut(duration: 0.18)) {
                                     viewModel.selectedQuality = quality
@@ -78,9 +79,15 @@ struct FormatSelectionView: View {
                 Text("選択中: \(viewModel.selectionSummary)")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(VYRATheme.primaryText)
-                Text(viewModel.estimatedSizeText)
-                    .font(.footnote)
-                    .foregroundStyle(VYRATheme.secondary)
+                if let knownFileSize = viewModel.knownFileSize {
+                    Text("ファイルサイズ: \(ByteCountFormatter.string(fromByteCount: knownFileSize, countStyle: .file))")
+                        .font(.footnote)
+                        .foregroundStyle(VYRATheme.secondary)
+                } else if !viewModel.hasVerifiedOptions {
+                    Text(viewModel.estimatedSizeText)
+                        .font(.footnote)
+                        .foregroundStyle(VYRATheme.secondary)
+                }
                 Text("ファイル名: \(viewModel.suggestedFileName)")
                     .font(.footnote)
                     .foregroundStyle(VYRATheme.secondary)

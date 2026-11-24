@@ -55,8 +55,11 @@ struct DownloadCapability: Codable, Equatable, Sendable {
     }
 }
 
-/// Interface placeholder for Phase 3 evaluation. Phase 2 deliberately
-/// declares capability evaluation only — no download execution API.
-protocol DownloadManager: Sendable {
+/// Capability-evaluation interface (Phase 2 design, kept in Phase 3).
+/// Renamed from the Phase 2 placeholder name `DownloadManager` in Phase 3:
+/// that name now belongs to the concrete download task manager
+/// (`DownloadTaskManager`), and this protocol only *evaluates* whether a
+/// source could ever be downloadable — it never executes a download.
+protocol DownloadCapabilityEvaluating: Sendable {
     func capability(for metadata: VideoMetadata) -> DownloadCapability
 }

@@ -4,13 +4,17 @@
 
 ```
 VYRA/
-├── App/          VYRAApp.swift（ModelContainer設定）, ContentView.swift（タブ切替）, VYRATheme.swift（3色定義）
-├── Models/       Video, VideoMetadata, DownloadCapability（Phase 3 設計）, DownloadItem（@Model）, DownloadFormat（+DownloadQuality）, DownloadState
+├── App/          VYRAApp.swift（ModelContainer設定）, ContentView.swift（タブ切替 + 起動時 Library 復元）, VYRATheme.swift（3色定義）
+├── Models/       Video, VideoMetadata, DownloadCapability, DownloadItem（@Model）, DownloadFormat（+DownloadQuality）,
+│                 DownloadState（遷移検証付き）, DownloadProgress, MediaFormatOption, DownloadError
 ├── ViewModels/   Home / VideoPreview / Download / Library / Settings（すべて @MainActor @Observable）
 ├── Views/        Home / Preview（+FormatSelection） / Download（Confirmation, Progress） / Library / Settings
 ├── Components/   GlassTabBar, URLInputView, PrimaryButton（+GlassIconButton）, VideoThumbnailView, DownloadProgressView
 └── Services/     URLValidationService, MetadataProvider（+集約 VideoMetadataService）, MockMetadataProvider,
-                  YtDlpIntegrationProvider（スタブ）, AuthorizedSourceProvider（骨格）, DownloadService（protocol + Mock）
+                  YtDlpIntegrationProvider（スタブ）, AuthorizedSourceProvider（骨格）, DirectMediaProvider,
+                  DownloadService（protocol）, URLSessionDownloadEngine / StubDownloadEngine,
+                  DownloadTaskManager, MediaFormatService（+DirectMediaResolver）,
+                  FileStorageService, FileNameValidator
 ```
 
 ## 責務分離
@@ -41,10 +45,50 @@ Home（URL入力）
 
 最近取得したメタデータは `HomeViewModel.recentFetches`（インメモリ、永続化なし、最小限の項目のみ）に保持し、Home の既存の最近セクションに表示する。
 
-## Phase 3 への接続（設計のみ）
+## ダウンロード・保存・Library（Phase 3）
 
-`DownloadCapability.evaluate(metadata:permission:)`: メタデータだけでは許可は得られない。permission が verified で形式が判明している場合のみ `isDownloadable == true`。`DownloadManager` protocol は能力評価のプレースホルダのみで、ダウンロード実行APIは Phase 2 には存在しない。
+```
+Video Preview（実在する形式・品質のみ選択肢化: MediaFormatService）
+  → Download Confirmation（ファイル名編集 = FileNameValidator で検証、判明している情報のみ表示）
+  → DirectMediaResolver: 直接ファイル URL か検証（ページ URL はここで拒否）
+  → DownloadTaskManager（状態遷移検証・進捗・キャンセル・再試行・複数タスク）
+      → DownloadService（protocol）→ URLSessionDownloadEngine（一時ファイルへ実ダウンロード）
+      → FileStorageService: Documents/VYRA へ移動（重複名解決、実測サイズ確認）
+      → LibraryViewModel.registerCompleted: SwiftData へ保存 + Library 表示
+  → Library: AVKit 再生 / ShareLink 共有 / 確認付き削除（ファイル + レコード同期）
+```
+
+- エンジン: yt-dlp は iOS で実行不可能（Phase 2 調査）。代替として直接 HTTPS
+  メディアファイル URL 専用のネイティブ URLSession エンジンを採用した。
+  エンジンは `DownloadService` プロトコルの背後にあり、テストでは
+  `StubDownloadEngine` に差し替える。
+- 状態: queued / preparing / downloading / completed / failed / cancelled
+  （+ Phase 1/2 互換 waiting）。`paused` は再開を保証できないため実装しない。
+- バックグラウンド: フォアグラウンドセッションのみ。アプリ終了で中断された
+  ダウンロードは failed として扱い、偽の再開はしない。
+- Phase 2 の `DownloadManager` プロトコルは `DownloadCapabilityEvaluating`
+  に改名（能力評価専用）。実体マネージャは `DownloadTaskManager`。
+  `DownloadCapability.evaluate` の原則（メタデータだけでは許可されない）は不変。
+
+## 永続化の方式と選択理由（SwiftData）
+
+Library の永続化には **SwiftData** を採用した。理由: (1) Phase 1 から
+`DownloadItem` が `@Model` でアプリに ModelContainer が設定済みであり、
+新規依存や移行コストなしに本格利用へ進められる。(2) 検索・ソート
+（新しい順）が FetchDescriptor で型安全に書ける。(3) ファイル実体は
+FileStorageService が持ち、SwiftData には相対パス等の管理情報だけを
+持つため、責務が分離できる。Codable + JSON ファイル方式は、件数が増えた
+場合の部分更新・整合性修復で不利なため採らない。
+
+保存項目: fileID / filename / Documents 相対パス / 拡張子（format）/
+mimeType / 実測 fileSize / savedAt（createdAt）/ duration? /
+thumbnailURL? / sourceURL / state / downloadedBytes / errorMessage?。
+
+起動時復元: Fetch → 完了項目のみ表示 → 実ファイル存在確認 → 無いレコードは
+削除して修復 → 中断状態（queued/preparing/downloading）のレコードは
+failed 化して Library から除外する。
 
 ## 並行性
 
 メタデータ取得は `async/await` + `Task`。HomeViewModel は取得中タスクを保持し、重複実行防止と `cancel()` によるキャンセルを行う。
+ダウンロードは `DownloadTaskManager`（@MainActor）がタスクごとに `Task` を保持し、エンジン（URLSession デリゲート / スタブ）からの進捗コールバックをメインアクターへ集約する。複数タスクの同時実行に対応する。
