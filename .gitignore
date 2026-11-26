@@ -1,0 +1,36 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods / Carthage (not used in Phase 1)
+Pods/
+Carthage/Build/
+
+# Logs & results
+*.log
+*.xcresult
+
+# macOS
+.DS_Store
+
+# Misc
+*.swp
+*~.nib
+
+# Embedded Python runtime (fetched by scripts/bootstrap_python.sh)
+Vendor/
+__pycache__/

@@ -1,0 +1,110 @@
+name: Build IPA (unsigned)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    # Documentation-only pushes do not need an IPA rebuild either.
+    paths-ignore:
+      - 'Documentation/**'
+      - '**/*.md'
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-ipa:
+    # macOS arm64 hosted pools (macos-26 / macos-15) repeatedly failed
+    # to acquire any runner at all on 2026-11-24/25 (jobs cancelled in
+    # queue after 15 min, 10+ times in a row). The Intel pool is
+    # separate; Xcode on Intel builds arm64 iOS binaries fine.
+    runs-on: macos-15-intel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore cached Python vendor build
+        uses: actions/cache@v4
+        with:
+          path: |
+            Vendor/Python.xcframework
+            Vendor/app_packages
+          key: vyra-vendor-python-${{ hashFiles('scripts/bootstrap_python.sh') }}
+
+      - name: Restore cached FFmpeg vendor build
+        uses: actions/cache@v4
+        with:
+          path: |
+            Vendor/FFmpeg.xcframework
+            Vendor/FFmpeg
+          key: vyra-vendor-ffmpeg-${{ runner.arch }}-${{ hashFiles('scripts/bootstrap_ffmpeg.sh') }}
+
+      - name: Set up Python 3.14 (bytecode precompile in bootstrap)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Fetch embedded Python + yt-dlp into Vendor/
+        run: ./scripts/bootstrap_python.sh
+
+      - name: Select latest Xcode 26
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE_PATH" ]; then
+            XCODE_PATH=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          fi
+          echo "Selecting $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          xcodebuild -version
+
+
+      - name: Build embedded FFmpeg into Vendor/
+        run: ./scripts/bootstrap_ffmpeg.sh
+      - name: Build for iOS device (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project VYRA.xcodeproj \
+            -scheme VYRA \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            2>&1 | tee build-ipa.log
+
+      - name: Compile test targets (device build; tests run in ios-build)
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project VYRA.xcodeproj \
+            -scheme VYRA \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedDataTests \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            2>&1 | tee build-tests.log
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH=$(ls -d build/DerivedData/Build/Products/Release-iphoneos/VYRA.app)
+          echo "Packaging $APP_PATH"
+          rm -rf Payload VYRA-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r VYRA-unsigned.ipa Payload
+          ls -lh VYRA-unsigned.ipa
+          unzip -l VYRA-unsigned.ipa | head -30
+
+      - name: Upload IPA artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VYRA-unsigned-ipa
+          path: |
+            VYRA-unsigned.ipa
+            build-ipa.log
+            build-tests.log
+          if-no-files-found: warn
+          retention-days: 14

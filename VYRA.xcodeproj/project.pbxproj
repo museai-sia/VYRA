@@ -1,0 +1,610 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000021;
+			remoteInfo = VYRA;
+		};
+		AA0000000000000000000012 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000021;
+			remoteInfo = VYRA;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BB0000000000000000000021 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				BB0000000000000000000012 /* Python.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BB0000000000000000000022 /* Install Python Runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Install Python Runtime";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -e\nif [ ! -d \"$PROJECT_DIR/Vendor/Python.xcframework\" ]; then\n  echo \"error: Vendor/Python.xcframework is missing. Run scripts/bootstrap_python.sh first.\" >&2\n  exit 1\nfi\nif [ -z \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ]; then\n  export EXPANDED_CODE_SIGN_IDENTITY=\"-\"\n  export EXPANDED_CODE_SIGN_IDENTITY_NAME=\"ad-hoc\"\nfi\n# BeeWare install_stdlib builds a path lib-$ARCHS and expects a\n# single architecture; generic simulator builds pass several.\ncase \" $ARCHS \" in\n  *\" arm64 \"*) export ARCHS=arm64 ;;\n  *) export ARCHS=$(echo $ARCHS | awk '{print $1}') ;;\nesac\nmkdir -p \"$DERIVED_FILE_DIR\"\nsed 's|> ${FULL_EXT%.so}.fwork|> \"${FULL_EXT%.so}.fwork\"|' \"$PROJECT_DIR/Vendor/Python.xcframework/build/utils.sh\" > \"$DERIVED_FILE_DIR/python_utils.sh\"\nsource \"$DERIVED_FILE_DIR/python_utils.sh\"\nrm -rf \"$CODESIGNING_FOLDER_PATH/app_packages\" \"$CODESIGNING_FOLDER_PATH/pybridge\"\ncp -R \"$PROJECT_DIR/Vendor/app_packages\" \"$CODESIGNING_FOLDER_PATH/app_packages\"\ncp -R \"$PROJECT_DIR/PythonBridge/pybridge\" \"$CODESIGNING_FOLDER_PATH/pybridge\"\ninstall_python Vendor/Python.xcframework app_packages\nrm -rf \"$CODESIGNING_FOLDER_PATH/pybridge/__pycache__\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000031 /* VYRA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VYRA.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000032 /* VYRATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VYRATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000033 /* VYRAUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VYRAUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB0000000000000000000001 /* Python.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Vendor/Python.xcframework; sourceTree = "<group>"; };
+		BB0000000000000000000002 /* PyBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = PythonBridge/PyBridge.c; sourceTree = "<group>"; };
+		BB0000000000000000000003 /* PyBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PythonBridge/PyBridge.h; sourceTree = "<group>"; };
+		BB0000000000000000000004 /* VYRA-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PythonBridge/VYRA-Bridging-Header.h"; sourceTree = "<group>"; };
+		CC0000000000000000000001 /* FFmpeg.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Vendor/FFmpeg.xcframework; sourceTree = "<group>"; };
+		CC0000000000000000000002 /* RemuxBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = FFmpegBridge/RemuxBridge.c; sourceTree = "<group>"; };
+		CC0000000000000000000003 /* RemuxBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FFmpegBridge/RemuxBridge.h; sourceTree = "<group>"; };
+		CC0000000000000000000004 /* TranscodeBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = FFmpegBridge/TranscodeBridge.c; sourceTree = "<group>"; };
+		CC0000000000000000000005 /* TranscodeBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FFmpegBridge/TranscodeBridge.h; sourceTree = "<group>"; };
+		CC0000000000000000000006 /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = System/Library/Frameworks/VideoToolbox.framework; sourceTree = SDKROOT; };
+		CC0000000000000000000007 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		CC0000000000000000000008 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		CC0000000000000000000009 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXBuildFile section */
+		BB0000000000000000000011 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000001 /* Python.xcframework */; };
+		BB0000000000000000000012 /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000001 /* Python.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BB0000000000000000000013 /* PyBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = BB0000000000000000000002 /* PyBridge.c */; };
+		CC0000000000000000000011 /* FFmpeg.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000001 /* FFmpeg.xcframework */; };
+		CC0000000000000000000013 /* RemuxBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000002 /* RemuxBridge.c */; };
+		CC0000000000000000000014 /* TranscodeBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000004 /* TranscodeBridge.c */; };
+		CC0000000000000000000016 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000006 /* VideoToolbox.framework */; };
+		CC0000000000000000000017 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000007 /* CoreMedia.framework */; };
+		CC0000000000000000000018 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000008 /* CoreVideo.framework */; };
+		CC0000000000000000000019 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000009 /* CoreFoundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		AA0000000000000000000041 /* VYRA */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VYRA;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000042 /* VYRATests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VYRATests;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000043 /* VYRAUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VYRAUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA0000000000000000000051 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000011 /* Python.xcframework in Frameworks */,
+				CC0000000000000000000011 /* FFmpeg.xcframework in Frameworks */,
+				CC0000000000000000000016 /* VideoToolbox.framework in Frameworks */,
+				CC0000000000000000000017 /* CoreMedia.framework in Frameworks */,
+				CC0000000000000000000018 /* CoreVideo.framework in Frameworks */,
+				CC0000000000000000000019 /* CoreFoundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000052 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000053 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000061 = {
+			isa = PBXGroup;
+			children = (
+				BB0000000000000000000001 /* Python.xcframework */,
+				BB0000000000000000000002 /* PyBridge.c */,
+				BB0000000000000000000003 /* PyBridge.h */,
+				BB0000000000000000000004 /* VYRA-Bridging-Header.h */,
+				CC0000000000000000000001 /* FFmpeg.xcframework */,
+				CC0000000000000000000002 /* RemuxBridge.c */,
+				CC0000000000000000000003 /* RemuxBridge.h */,
+				CC0000000000000000000004 /* TranscodeBridge.c */,
+				CC0000000000000000000005 /* TranscodeBridge.h */,
+				CC0000000000000000000006 /* VideoToolbox.framework */,
+				CC0000000000000000000007 /* CoreMedia.framework */,
+				CC0000000000000000000008 /* CoreVideo.framework */,
+				CC0000000000000000000009 /* CoreFoundation.framework */,
+				AA0000000000000000000041 /* VYRA */,
+				AA0000000000000000000042 /* VYRATests */,
+				AA0000000000000000000043 /* VYRAUITests */,
+				AA0000000000000000000062 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000062 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000031 /* VYRA.app */,
+				AA0000000000000000000032 /* VYRATests.xctest */,
+				AA0000000000000000000033 /* VYRAUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA0000000000000000000021 /* VYRA */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000071 /* Build configuration list for PBXNativeTarget "VYRA" */;
+			buildPhases = (
+				AA0000000000000000000081 /* Sources */,
+				AA0000000000000000000051 /* Frameworks */,
+				AA0000000000000000000091 /* Resources */,
+				BB0000000000000000000021 /* Embed Frameworks */,
+				BB0000000000000000000022 /* Install Python Runtime */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000041 /* VYRA */,
+			);
+			name = VYRA;
+			productName = VYRA;
+			productReference = AA0000000000000000000031 /* VYRA.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AA0000000000000000000022 /* VYRATests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000072 /* Build configuration list for PBXNativeTarget "VYRATests" */;
+			buildPhases = (
+				AA0000000000000000000082 /* Sources */,
+				AA0000000000000000000052 /* Frameworks */,
+				AA0000000000000000000092 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA00000000000000000000A1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000042 /* VYRATests */,
+			);
+			name = VYRATests;
+			productName = VYRATests;
+			productReference = AA0000000000000000000032 /* VYRATests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AA0000000000000000000023 /* VYRAUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000073 /* Build configuration list for PBXNativeTarget "VYRAUITests" */;
+			buildPhases = (
+				AA0000000000000000000083 /* Sources */,
+				AA0000000000000000000053 /* Frameworks */,
+				AA0000000000000000000093 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA00000000000000000000A2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000043 /* VYRAUITests */,
+			);
+			name = VYRAUITests;
+			productName = VYRAUITests;
+			productReference = AA0000000000000000000033 /* VYRAUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					AA0000000000000000000021 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					AA0000000000000000000022 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = AA0000000000000000000021;
+					};
+					AA0000000000000000000023 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = AA0000000000000000000021;
+					};
+				};
+			};
+			buildConfigurationList = AA0000000000000000000070 /* Build configuration list for PBXProject "VYRA" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA0000000000000000000061;
+			productRefGroup = AA0000000000000000000062 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA0000000000000000000021 /* VYRA */,
+				AA0000000000000000000022 /* VYRATests */,
+				AA0000000000000000000023 /* VYRAUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA0000000000000000000091 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000092 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000093 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA0000000000000000000081 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000000000000000000013 /* PyBridge.c in Sources */,
+				CC0000000000000000000013 /* RemuxBridge.c in Sources */,
+				CC0000000000000000000014 /* TranscodeBridge.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000082 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000083 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA00000000000000000000A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000021 /* VYRA */;
+			targetProxy = AA0000000000000000000011 /* PBXContainerItemProxy */;
+		};
+		AA00000000000000000000A2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000021 /* VYRA */;
+			targetProxy = AA0000000000000000000012 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AA00000000000000000000B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		AA00000000000000000000B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.9;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA00000000000000000000C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(BUILT_PRODUCTS_DIR)/Python.framework/Headers",
+					"$(PROJECT_DIR)/Vendor/FFmpeg/include",
+					"$(PROJECT_DIR)/FFmpegBridge",
+					"$(inherited)",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "PythonBridge/VYRA-Bridging-Header.h";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VYRA;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.9.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AA00000000000000000000C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(BUILT_PRODUCTS_DIR)/Python.framework/Headers",
+					"$(PROJECT_DIR)/Vendor/FFmpeg/include",
+					"$(PROJECT_DIR)/FFmpegBridge",
+					"$(inherited)",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "PythonBridge/VYRA-Bridging-Header.h";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VYRA;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.9.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		AA00000000000000000000D1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VYRA.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VYRA";
+			};
+			name = Debug;
+		};
+		AA00000000000000000000D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VYRA.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VYRA";
+			};
+			name = Release;
+		};
+		AA00000000000000000000E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = VYRA;
+			};
+			name = Debug;
+		};
+		AA00000000000000000000E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.siatube.vyra.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = VYRA;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0000000000000000000070 /* Build configuration list for PBXProject "VYRA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000B1 /* Debug */,
+				AA00000000000000000000B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000071 /* Build configuration list for PBXNativeTarget "VYRA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000C1 /* Debug */,
+				AA00000000000000000000C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000072 /* Build configuration list for PBXNativeTarget "VYRATests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000D1 /* Debug */,
+				AA00000000000000000000D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000073 /* Build configuration list for PBXNativeTarget "VYRAUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000E1 /* Debug */,
+				AA00000000000000000000E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA0000000000000000000001 /* Project object */;
+}

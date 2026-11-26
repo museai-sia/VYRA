@@ -1,0 +1,224 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+    # Documentation-only pushes do not need the ~30 min test run;
+    # the full suite stays one click away via workflow_dispatch.
+    paths-ignore:
+      - 'Documentation/**'
+      - '**/*.md'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full_suite:
+        description: 'Run the full test suite (dispatch always runs full; this input documents the override)'
+        type: boolean
+        default: true
+
+jobs:
+  build-and-test:
+    # Xcode 26 / iOS 26 SDK requires the macOS 26 runner image.
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so the change classifier can diff against
+          # the push/PR base commit.
+          fetch-depth: 0
+
+      - name: Select tests for this change
+        id: select
+        env:
+          FORCE_FULL: ${{ (github.event_name == 'workflow_dispatch' || inputs.full_suite) && '1' || '' }}
+        run: |
+          ./scripts/select_tests.sh --self-test
+          if [ "$FORCE_FULL" = "1" ]; then
+            FORCE_FULL=1 ./scripts/select_tests.sh < /dev/null >> "$GITHUB_OUTPUT"
+          else
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE="${{ github.event.pull_request.base.sha }}"
+            else
+              BASE="${{ github.event.before }}"
+            fi
+            HEAD_SHA="${{ github.sha }}"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              echo "No usable base commit; selecting the full suite." >&2
+              FORCE_FULL=1 ./scripts/select_tests.sh < /dev/null >> "$GITHUB_OUTPUT"
+            else
+              git diff --name-only "$BASE" "$HEAD_SHA" | tee changed-paths.txt >&2
+              ./scripts/select_tests.sh < changed-paths.txt >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Report selection
+        run: |
+          echo "Selected test mode: ${{ steps.select.outputs.mode }}"
+          echo "Reason: ${{ steps.select.outputs.reason }}"
+          echo "Skip args: ${{ steps.select.outputs.skip_args }}"
+          {
+            echo "## Test selection"
+            echo "- mode: ${{ steps.select.outputs.mode }}"
+            echo "- reason: ${{ steps.select.outputs.reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore cached Python vendor build
+        if: steps.select.outputs.mode != 'none'
+        uses: actions/cache@v4
+        with:
+          path: |
+            Vendor/Python.xcframework
+            Vendor/app_packages
+          key: vyra-vendor-python-${{ hashFiles('scripts/bootstrap_python.sh') }}
+
+      - name: Restore cached FFmpeg vendor build
+        if: steps.select.outputs.mode != 'none'
+        uses: actions/cache@v4
+        with:
+          path: |
+            Vendor/FFmpeg.xcframework
+            Vendor/FFmpeg
+          key: vyra-vendor-ffmpeg-${{ runner.arch }}-${{ hashFiles('scripts/bootstrap_ffmpeg.sh') }}
+
+      - name: Set up Python 3.14 (bytecode precompile in bootstrap)
+        if: steps.select.outputs.mode != 'none'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Fetch embedded Python + yt-dlp into Vendor/
+        if: steps.select.outputs.mode != 'none'
+        run: ./scripts/bootstrap_python.sh
+
+      - name: Show available Xcode versions
+        if: steps.select.outputs.mode != 'none'
+        run: ls -d /Applications/Xcode*.app 2>/dev/null || true
+
+      - name: Select latest Xcode 26
+        if: steps.select.outputs.mode != 'none'
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE_PATH" ]; then
+            XCODE_PATH=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          fi
+          echo "Selecting $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+
+      - name: Build embedded FFmpeg into Vendor/
+        if: steps.select.outputs.mode != 'none'
+        run: ./scripts/bootstrap_ffmpeg.sh
+
+      - name: Show versions
+        if: steps.select.outputs.mode != 'none'
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun --sdk iphonesimulator --show-sdk-version || true
+
+      - name: Resolve iPhone 17 Pro simulator
+        if: steps.select.outputs.mode != 'none'
+        id: sim
+        run: |
+          # The owner's device baseline is iPhone 17 Pro; pin the test
+          # destination to exactly that simulator (fail loudly if the
+          # runner image stops shipping it, instead of silently
+          # testing on a different device).
+          SIM_JSON=$(xcrun simctl list devices available -j)
+          SIM_LINE=$(printf '%s' "$SIM_JSON" | python3 -c "
+          import json, re, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+              if 'iOS' not in runtime:
+                  continue
+              for d in devices:
+                  if d.get('isAvailable') and d['name'] == 'iPhone 17 Pro':
+                      m = re.search(r'iOS-(\d+)-(\d+)', runtime)
+                      os_ver = (m.group(1) + '.' + m.group(2)) if m else runtime
+                      print(d['udid'] + ' ' + os_ver)
+                      raise SystemExit
+          ")
+          if [ -z "$SIM_LINE" ]; then
+            echo "::error::iPhone 17 Pro simulator not found on this runner image."
+            xcrun simctl list devices available | grep -i iphone || true
+            exit 1
+          fi
+          SIM_UDID="${SIM_LINE%% *}"
+          SIM_OS="${SIM_LINE##* }"
+          echo "Using simulator: iPhone 17 Pro (iOS $SIM_OS, UDID $SIM_UDID)"
+          echo "udid=$SIM_UDID" >> "$GITHUB_OUTPUT"
+          echo "os=$SIM_OS" >> "$GITHUB_OUTPUT"
+
+      - name: Build for iOS Simulator
+        if: steps.select.outputs.mode != 'none'
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project VYRA.xcodeproj \
+            -scheme VYRA \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build.log
+
+      - name: Run tests on the iPhone 17 Pro simulator
+        if: steps.select.outputs.mode != 'none'
+        env:
+          SKIP_ARGS: ${{ steps.select.outputs.skip_args }}
+        run: |
+          set -o pipefail
+          echo "Testing on iPhone 17 Pro simulator (iOS ${{ steps.sim.outputs.os }})"
+          echo "Test selection mode: ${{ steps.select.outputs.mode }} - ${{ steps.select.outputs.reason }}"
+          # SKIP_ARGS is a space-separated list of -skip-testing flags
+          # produced by scripts/select_tests.sh (empty for full mode).
+          # shellcheck disable=SC2086
+          xcodebuild test \
+            -project VYRA.xcodeproj \
+            -scheme VYRA \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            $SKIP_ARGS \
+            2>&1 | tee test.log
+
+      # Screenshots (optional): capturing specific in-app screens requires
+      # driving the app UI, which simctl alone cannot do reliably.
+      # Manual procedure:
+      #   1. Boot a simulator and install the built VYRA.app (xcrun simctl install).
+      #   2. Launch it (xcrun simctl launch com.siatube.vyra).
+      #   3. Navigate manually (or via UI tests) to each screen.
+      #   4. Capture with: xcrun simctl io booted screenshot <name>.png
+      # Screens to capture: Home, Video Preview, Format Selection,
+      # Download Progress, Library, Settings.
+      # The UI-test launch screenshot is attached to TestResults.xcresult.
+      # This best-effort step costs several minutes (extra simulator
+      # boot), so it only runs in full mode.
+      - name: Capture launch screenshot (best effort)
+        if: always() && steps.select.outputs.mode == 'full'
+        continue-on-error: true
+        run: |
+          APP_PATH=$(ls -d ~/Library/Developer/Xcode/DerivedData/VYRA-*/Build/Products/Debug-iphonesimulator/VYRA.app 2>/dev/null | head -1)
+          UDID="${{ steps.sim.outputs.udid }}"
+          if [ -n "$APP_PATH" ] && [ -n "$UDID" ]; then
+            xcrun simctl boot "$UDID" || true
+            xcrun simctl bootstatus "$UDID" -b || true
+            xcrun simctl install "$UDID" "$APP_PATH" || true
+            xcrun simctl launch "$UDID" com.siatube.vyra || true
+            sleep 3
+            xcrun simctl io "$UDID" screenshot launch.png || true
+          else
+            echo "Built app or simulator not found; skipping screenshot."
+          fi
+
+      - name: Upload build and test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vyra-build-logs-and-results
+          path: |
+            build.log
+            test.log
+            TestResults.xcresult
+            launch.png
+          if-no-files-found: warn
+          retention-days: 14
