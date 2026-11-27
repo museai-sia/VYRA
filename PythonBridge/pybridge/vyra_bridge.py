@@ -178,9 +178,11 @@ def _versions():
 # yt-dlp merges the formats of every client it queries, and for a
 # format_id offered by several clients the earlier client's stream URL
 # is the one a download uses.
+# Start with 'default' so yt-dlp selects clients for the current session.
+# The explicit clients that follow supplement that selection.
 #
-# Evidence (yt_dlp/extractor/youtube/_base.py, pinned yt-dlp 2026.8.19,
-# GVS PO token policies verified by reading INNERTUBE_CLIENTS):
+# Rationale for the explicit clients (GVS PO token policies in
+# yt-dlp 2026.8.19's INNERTUBE_CLIENTS):
 #   tv            GVS PO token NOT required (HTTPS/HLS) -> itag 18 etc.
 #                 are downloadable without any PO token provider.
 #   web_safari    HTTPS requires a PO token, HLS does not; this client
@@ -192,9 +194,7 @@ def _versions():
 #                 provider, googlevideo answers 403 after the first
 #                 data window (~100 KB) — the on-device failure this
 #                 ordering fixes. Kept only as extraction fallbacks.
-#   android_vr    Excluded: this version marks its GVS policy required,
-#                 and yt-dlp master notes all its formats being 403'd.
-_YOUTUBE_PLAYER_CLIENTS = ['tv', 'web_safari', 'web_embedded', 'web', 'mweb', 'ios']
+_YOUTUBE_PLAYER_CLIENTS = ['default', 'tv', 'web_safari', 'web_embedded', 'web', 'mweb', 'ios']
 
 
 def _youtube_extractor_args():
