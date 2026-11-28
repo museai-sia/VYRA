@@ -273,7 +273,7 @@ final class SettingsViewModel {
                 isAudioOnly: option.isAudio,
                 estimatedBytes: option.estimatedFileSize,
                 durationSeconds: info.duration,
-                height: option.heightPixels)
+                height: option.pixelHeight ?? option.quality.heightHint)
             if let audioFormatID = option.audioYtDlpFormatID {
                 // The best MP4 is a split pair: download both streams
                 // and merge (remux or transcode), exactly like the
