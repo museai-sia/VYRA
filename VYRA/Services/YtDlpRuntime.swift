@@ -148,7 +148,41 @@ extension YtDlpExtractedInfo {
 enum YtDlpMetadataMapper {
     static let supportedContainers: Set<String> = ["mp4", "m4a", "webm"]
 
+    private struct FrameSize: Hashable {
+        let width: Int
+        let height: Int
+
+        init?(_ format: YtDlpFormatInfo) {
+            guard let width = format.width, width > 0, let height = format.height, height > 0 else { return nil }
+            self.width = width
+            self.height = height
+        }
+    }
+
+    private static func youtubeQuality(from note: String?) -> DownloadQuality? {
+        // yt-dlp can prefix a language or append FPS, HDR, and other notes.
+        for field in (note ?? "").split(separator: ",") {
+            let text = field.trimmingCharacters(in: .whitespaces)
+            if let range = text.range(of: #"^[0-9]+p(?=[0-9]*(?:\s|$))"#, options: .regularExpression),
+               let quality = DownloadQuality.forLabel(String(text[range])) {
+                return quality
+            }
+        }
+        return nil
+    }
+
     static func metadata(from info: YtDlpExtractedInfo, sourceURL: URL) -> VideoMetadata {
+        let isYouTube = info.extractor?.lowercased() == "youtube"
+        var qualitiesBySize: [FrameSize: Set<DownloadQuality>] = [:]
+        if isYouTube {
+            // HLS renditions can omit the label. Reuse a reported tier
+            // when the same dimensions identify it unambiguously.
+            for format in info.formats where format.vcodec != nil && format.vcodec != "none" {
+                if let size = FrameSize(format), let quality = youtubeQuality(from: format.formatNote) {
+                    qualitiesBySize[size, default: []].insert(quality)
+                }
+            }
+        }
         let formats: [AvailableMediaFormat] = info.formats.compactMap { format in
             guard let ext = format.ext?.lowercased(),
                   supportedContainers.contains(ext),
@@ -157,10 +191,11 @@ enum YtDlpMetadataMapper {
             let qualityLabel: String?
             if isAudioOnly {
                 qualityLabel = nil
-            } else if let height = format.height {
-                qualityLabel = "\(height)p"
             } else {
-                qualityLabel = nil
+                let reported = isYouTube ? youtubeQuality(from: format.formatNote) : nil
+                let matching = FrameSize(format).flatMap { qualitiesBySize[$0] }
+                let inherited = matching?.count == 1 ? matching?.first : nil
+                qualityLabel = (reported ?? inherited ?? format.height.flatMap(DownloadQuality.forHeight))?.displayName
             }
             return AvailableMediaFormat(
                 container: ext,
@@ -172,6 +207,7 @@ enum YtDlpMetadataMapper {
                 audioCodec: format.acodec,
                 estimatedFileSize: format.filesize ?? format.filesizeApprox,
                 height: format.height,
+                width: format.width,
                 fps: format.fps,
                 totalBitrate: format.tbr,
                 protocolName: format.protocolName,

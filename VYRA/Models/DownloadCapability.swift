@@ -33,6 +33,7 @@ struct AvailableMediaFormat: Codable, Equatable, Sendable {
     var estimatedFileSize: Int64? = nil
     /// Pixel height reported by the source (yt-dlp `height`), if any.
     var height: Int? = nil
+    var width: Int? = nil
     /// Frames per second reported by the source (yt-dlp `fps`), if any.
     var fps: Double? = nil
     /// Total bitrate (kbit/s) reported by the source, if any.

@@ -266,6 +266,45 @@ final class SplitFormatTests: XCTestCase {
         XCTAssertEqual(selected?.audioYtDlpFormatID, "140")
     }
 
+    func testYouTubeQualityTiersRetainCustomStreamDimensions() {
+        var hd = format("137", vcodec: "avc1.640028", acodec: "none", height: 804)
+        hd.width = 1920
+        hd.formatNote = "1080p"
+        var hls = format("96", vcodec: "avc1.640028", acodec: "mp4a.40.2", height: 804, protocol: "m3u8_native")
+        hls.width = 1920
+        hls.formatNote = nil
+        var uhd = format("337", ext: "webm", vcodec: "vp09.02.51.10", acodec: "none", height: 1608)
+        uhd.width = 3840
+        uhd.formatNote = "2160p60 HDR, tv"
+        let audio = format("140", ext: "m4a", vcodec: "none", acodec: "mp4a.40.2")
+
+        let viewModel = VideoPreviewViewModel(metadata: metadata([hd, hls, uhd, audio]))
+        XCTAssertEqual(viewModel.availableQualities, [.p1080, .p2160, .original])
+        viewModel.selectedQuality = .p1080
+        XCTAssertEqual(viewModel.selectionSummary, "MP4 · 1080p (1920×804)")
+        XCTAssertEqual(viewModel.selectedYtDlpFormatID, "96")
+        viewModel.selectedQuality = .p2160
+        XCTAssertEqual(viewModel.selectionSummary, "MP4 · 2160p (3840×1608)")
+        let item = viewModel.makeDownloadItem()
+        XCTAssertEqual(item.ytDlpFormatID, "337")
+        XCTAssertEqual(item.ytDlpAudioFormatID, "140")
+        XCTAssertEqual(item.ytDlpPixelHeight, 1608)
+        viewModel.selectedQuality = .original
+        XCTAssertEqual(viewModel.selectedYtDlpFormatID, "337")
+    }
+
+    func testUnlabelledCustomHeightIsSelectableAlongsideOriginal() throws {
+        var custom = format("17", vcodec: "avc1.640028", acodec: "mp4a.40.2", height: 768)
+        custom.formatNote = nil
+        let options = MediaFormatService.options(from: metadata(typicalFormats + [custom]))
+        let quality = try XCTUnwrap(DownloadQuality.forHeight(768))
+        XCTAssertEqual(DownloadQuality(rawValue: quality.rawValue), quality)
+        XCTAssertEqual(DownloadQuality(rawValue: "p1080"), .p1080)
+        XCTAssertTrue(MediaFormatService.qualities(for: .mp4, in: options).contains(quality))
+        XCTAssertEqual(MediaFormatService.selectOption(in: options, format: .mp4, quality: quality)?.ytDlpFormatID, "17")
+        XCTAssertEqual(MediaFormatService.selectOption(in: options, format: .mp4, quality: .original)?.ytDlpFormatID, "137")
+    }
+
     // MARK: - Resolver
 
     func testResolverReturnsAudioFormatIDForSplitSelection() {

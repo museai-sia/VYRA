@@ -55,6 +55,8 @@ final class DownloadItem {
     /// single files and .remux for split pairs (the pre-transcode
     /// behaviour).
     var ytDlpProcessingRawValue: String?
+    /// Actual stream height for estimating the transcode, when known.
+    var ytDlpPixelHeight: Int?
 
     var ytDlpProcessing: MediaProcessingKind? {
         get { ytDlpProcessingRawValue.flatMap(MediaProcessingKind.init(rawValue:)) }

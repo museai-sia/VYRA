@@ -71,7 +71,7 @@ final class DownloadTaskManager {
                 ytDlpIsAudioOnly: item.format.isAudioOnly,
                 estimatedBytes: item.fileSizeBytes > 0 ? item.fileSizeBytes : nil,
                 durationSeconds: item.durationSeconds,
-                estimatedHeight: item.quality.heightHint)
+                estimatedHeight: item.ytDlpPixelHeight ?? item.quality.heightHint)
             return startResolved(item: item, request: request, engine: ytDlpEngine)
         }
         switch DirectMediaResolver.resolve(sourceURL: sourceURL, format: item.format) {

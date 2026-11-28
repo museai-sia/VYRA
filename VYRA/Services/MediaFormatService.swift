@@ -35,10 +35,10 @@ enum MediaFormatService {
 
     /// Options from a source's reported formats.
     ///
-    /// Offering is NOT narrowed by codec or container (しあ's
-    /// order, 2026-11-25): every distinct height yt-dlp reports
-    /// becomes one option, and the saved file is always an
-    /// AVKit-playable MP4. Per height, the winning format is chosen
+    /// Each reported video quality becomes one option regardless of
+    /// codec or container. When the source omits the quality label,
+    /// use the stream's pixel height. The saved video is an
+    /// AVKit-playable MP4. Per quality, the winning format is chosen
     /// by a fixed preference:
     ///   1. a combined HTTPS format that can be saved as-is (avc1
     ///      video + AAC audio in an MP4 container) — processing
@@ -49,16 +49,16 @@ enum MediaFormatService {
     ///      HLS is NEVER silently dropped: for some videos the ONLY
     ///      formats above 360p a session returns are the HLS
     ///      renditions (the DASH URLs being withheld, e.g. under
-    ///      the SABR experiment), and those heights must stay
+    ///      the SABR experiment), and those qualities must stay
     ///      selectable;
     ///   3. a split HTTPS pair that can be stream-copied together
     ///      (processing .remux);
-    ///   4. otherwise the best-quality format at that height
+    ///   4. otherwise the best-quality format at that quality
     ///      regardless of codec/container/protocol (VP9/AV1,
     ///      MP4/WebM, non-copyable HLS) — transcoded in-process to
     ///      H.264 + AAC (.transcode).
     /// Split winners pair with `bestPairedAudio` (AAC preferred,
-    /// best other audio otherwise). A split height with NO audio
+    /// best other audio otherwise). A split rendition with NO audio
     /// format at all is not offered: a silent video file is not a
     /// complete download.
     ///
@@ -92,18 +92,15 @@ enum MediaFormatService {
             options.append(audioOption(for: entry))
         }
 
-        // Video options: one per distinct height. HLS combined
-        // formats compete at their height like everything else;
-        // HLS video-only formats are the one exclusion (see the
-        // doc comment above).
-        var byHeight: [Int: [AvailableMediaFormat]] = [:]
+        var byQuality: [Int: [AvailableMediaFormat]] = [:]
         for entry in available where !entry.isAudioOnly {
             if isHLS(entry), entry.requiresMerge { continue }
-            guard let height = entry.height else { continue }
-            byHeight[height, default: []].append(entry)
+            let quality = DownloadQuality.forLabel(entry.qualityLabel) ?? entry.height.flatMap(DownloadQuality.forHeight)
+            guard let tier = quality?.heightHint else { continue }
+            byQuality[tier, default: []].append(entry)
         }
-        for height in byHeight.keys.sorted() {
-            guard let entries = byHeight[height],
+        for tier in byQuality.keys.sorted() {
+            guard let entries = byQuality[tier],
                   let winner = bestVideoCandidate(in: entries) else { continue }
             if winner.requiresMerge {
                 // Split winner: needs the paired audio to be a
@@ -135,7 +132,7 @@ enum MediaFormatService {
         (entry.audioCodec ?? "").lowercased().hasPrefix("mp4a")
     }
 
-    /// The per-height winner under the documented preference:
+    /// The winner for each quality under the documented preference:
     /// the candidateRank tier decides first (direct HTTPS combined,
     /// then HLS combined, then split, then anything), and within a
     /// tier: combined before split, then best quality (total
@@ -197,7 +194,9 @@ enum MediaFormatService {
             videoCodec: entry.videoCodec,
             audioCodec: entry.audioCodec,
             sourceContainer: entry.container.lowercased(),
-            urlExpiresAt: FormatURLExpiry.usableUntil(of: entry.formatURL)
+            urlExpiresAt: FormatURLExpiry.usableUntil(of: entry.formatURL),
+            pixelWidth: entry.width,
+            pixelHeight: entry.height
         )
     }
 
@@ -230,7 +229,9 @@ enum MediaFormatService {
             sourceContainer: video.container.lowercased(),
             urlExpiresAt: [FormatURLExpiry.usableUntil(of: video.formatURL),
                            FormatURLExpiry.usableUntil(of: audio.formatURL)]
-                .compactMap { $0 }.min()
+                .compactMap { $0 }.min(),
+            pixelWidth: video.width,
+            pixelHeight: video.height
         )
     }
 
@@ -262,7 +263,7 @@ enum MediaFormatService {
     /// format of any codec/container (e.g. Opus in WebM, transcoded
     /// to AAC during the merge). Within a class: highest bitrate,
     /// then largest size. One shared choice keeps pairing
-    /// deterministic at every height.
+    /// deterministic at every quality.
     static func bestPairedAudio(in available: [AvailableMediaFormat]) -> AvailableMediaFormat? {
         available
             .filter { entry in
@@ -284,19 +285,9 @@ enum MediaFormatService {
         return (aacScore, m4aScore, entry.totalBitrate ?? -1, entry.estimatedFileSize ?? -1)
     }
 
-    /// Picks the ONE option a (format, quality) selection means.
-    ///
-    /// "Original" is the BEST option — highest picture height, then
-    /// combined-before-split, then largest size — never merely the
-    /// first match (yt-dlp lists formats worst-first, so the old
-    /// first-match rule picked the *worst* format, and because
-    /// heights outside the named cases collapse into the `.original`
-    /// bucket, that was an ultralow audio-only file). A specific
-    /// quality picks the exact height label (options are already
-    /// reduced to one winner per height by `options(from:)`, under
-    /// the copyable-first preference documented there). Audio picks
-    /// a directly-savable AAC file first, then the largest
-    /// (best-bitrate) audio file.
+    /// An explicit quality looks for that tier first. "Original" picks
+    /// the highest offered quality. Audio prefers directly savable AAC,
+    /// then file size.
     static func selectOption(in options: [MediaFormatOption],
                              format: DownloadFormat,
                              quality: DownloadQuality?) -> MediaFormatOption? {
@@ -311,8 +302,7 @@ enum MediaFormatService {
         let videos = candidates.filter { $0.isVideo }
         guard !videos.isEmpty else { return nil }
         if let quality, quality != .original {
-            let label = quality.displayName.lowercased()
-            let exact = videos.filter { $0.qualityLabel?.lowercased() == label }
+            let exact = videos.filter { $0.quality == quality }
             if !exact.isEmpty {
                 return exact.max {
                     ($0.isSplitPair ? 0 : 1, $0.estimatedFileSize ?? 0)
@@ -321,8 +311,8 @@ enum MediaFormatService {
             }
         }
         return videos.max {
-            ($0.heightPixels ?? -1, $0.isSplitPair ? 0 : 1, $0.estimatedFileSize ?? 0)
-                < ($1.heightPixels ?? -1, $1.isSplitPair ? 0 : 1, $1.estimatedFileSize ?? 0)
+            ($0.quality.heightHint ?? -1, $0.isSplitPair ? 0 : 1, $0.estimatedFileSize ?? 0)
+                < ($1.quality.heightHint ?? -1, $1.isSplitPair ? 0 : 1, $1.estimatedFileSize ?? 0)
         }
     }
 
@@ -339,8 +329,7 @@ enum MediaFormatService {
         for option in options where option.format == format {
             if !seen.contains(option.quality) { seen.append(option.quality) }
         }
-        // "Original" (= best height) is always offered for video,
-        // alongside every distinct height.
+        // "Original" is always offered alongside the video qualities.
         if !format.isAudioOnly, !seen.isEmpty, !seen.contains(.original) {
             seen.append(.original)
         }

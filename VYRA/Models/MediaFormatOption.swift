@@ -38,6 +38,8 @@ struct MediaFormatOption: Identifiable, Equatable, Sendable {
     /// the earlier of the two). nil when the source reported no
     /// expiry — unknown is not treated as stale.
     var urlExpiresAt: Date? = nil
+    var pixelWidth: Int? = nil
+    var pixelHeight: Int? = nil
 
     /// True when the format URL expiry has passed (or is within the
     /// 60-second safety margin) at `now`.
@@ -52,17 +54,10 @@ struct MediaFormatOption: Identifiable, Equatable, Sendable {
 
     var format: DownloadFormat? { DownloadFormat(rawValue: fileExtension.lowercased()) }
 
-    /// Pixel height parsed from the quality label ("720p" -> 720).
-    var heightPixels: Int? {
-        guard let qualityLabel, qualityLabel.hasSuffix("p") else { return nil }
-        return Int(qualityLabel.dropLast())
-    }
-
     var quality: DownloadQuality {
-        if let height = heightPixels, let quality = DownloadQuality.forHeight(height) {
-            return quality
-        }
-        return .original
+        DownloadQuality.forLabel(qualityLabel)
+            ?? pixelHeight.flatMap(DownloadQuality.forHeight)
+            ?? .original
     }
 
     static func mimeType(forExtension ext: String) -> String {

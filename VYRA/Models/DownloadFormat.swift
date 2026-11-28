@@ -22,64 +22,47 @@ enum DownloadFormat: String, CaseIterable, Identifiable, Equatable, Sendable {
     }
 }
 
-enum DownloadQuality: String, CaseIterable, Identifiable, Equatable, Sendable {
-    case p144
-    case p240
-    case p360
-    case p480
-    case p720
-    case p1080
-    case p1440
-    case p2160
-    case original
+struct DownloadQuality: RawRepresentable, CaseIterable, Identifiable, Hashable, Sendable {
+    static let p144 = Self(height: 144)
+    static let p240 = Self(height: 240)
+    static let p360 = Self(height: 360)
+    static let p480 = Self(height: 480)
+    static let p720 = Self(height: 720)
+    static let p1080 = Self(height: 1080)
+    static let p1440 = Self(height: 1440)
+    static let p2160 = Self(height: 2160)
+    static let original = Self(height: nil)
 
+    static let allCases: [Self] = [.p144, .p240, .p360, .p480, .p720, .p1080, .p1440, .p2160, .original]
+
+    /// Height named by the quality label. A source tier can differ from
+    /// the dimensions of the selected stream.
+    let heightHint: Int?
     var id: String { rawValue }
+    var rawValue: String { heightHint.map { "p\($0)" } ?? "original" }
+    var displayName: String { heightHint.map { "\($0)p" } ?? "Original" }
 
-    var displayName: String {
-        switch self {
-        case .p144: return "144p"
-        case .p240: return "240p"
-        case .p360: return "360p"
-        case .p480: return "480p"
-        case .p720: return "720p"
-        case .p1080: return "1080p"
-        case .p1440: return "1440p"
-        case .p2160: return "2160p"
-        case .original: return "Original"
+    private init(height: Int?) {
+        heightHint = height
+    }
+
+    init?(rawValue: String) {
+        if rawValue == "original" {
+            self = .original
+        } else {
+            guard rawValue.hasPrefix("p"), let height = Int(rawValue.dropFirst()),
+                  let quality = Self.forHeight(height), quality.rawValue == rawValue else { return nil }
+            self = quality
         }
     }
 
-    /// The pixel height this quality names, when it names one
-    /// (`.original` names none — it means "the best available").
-    var heightHint: Int? {
-        switch self {
-        case .p144: return 144
-        case .p240: return 240
-        case .p360: return 360
-        case .p480: return 480
-        case .p720: return 720
-        case .p1080: return 1080
-        case .p1440: return 1440
-        case .p2160: return 2160
-        case .original: return nil
-        }
+    static func forHeight(_ height: Int) -> Self? {
+        height > 0 ? Self(height: height) : nil
     }
 
-    /// The quality case for an exact pixel height, when one exists.
-    /// Heights without a dedicated case (rare, e.g. 768p) are reached
-    /// through `.original`-style best-height selection instead.
-    static func forHeight(_ height: Int) -> DownloadQuality? {
-        switch height {
-        case 144: return .p144
-        case 240: return .p240
-        case 360: return .p360
-        case 480: return .p480
-        case 720: return .p720
-        case 1080: return .p1080
-        case 1440: return .p1440
-        case 2160: return .p2160
-        default: return nil
-        }
+    static func forLabel(_ label: String?) -> Self? {
+        guard let label, label.lowercased().hasSuffix("p"), let height = Int(label.dropLast()) else { return nil }
+        return forHeight(height)
     }
 
     /// Relative size factor used only for mock size estimates.
@@ -93,7 +76,7 @@ enum DownloadQuality: String, CaseIterable, Identifiable, Equatable, Sendable {
         case .p1080: return 1.4
         case .p1440: return 2.0
         case .p2160: return 3.2
-        case .original: return 2.2
+        default: return 2.2
         }
     }
 }

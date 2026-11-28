@@ -170,7 +170,11 @@ final class VideoPreviewViewModel {
         if selectedFormat.isAudioOnly {
             return "\(selectedFormat.displayName) · Audio"
         }
-        return "\(selectedFormat.displayName) · \(selectedQuality.displayName)"
+        let summary = "\(selectedFormat.displayName) · \(selectedQuality.displayName)"
+        if let option = selectedOption, let width = option.pixelWidth, let height = option.pixelHeight {
+            return "\(summary) (\(width)×\(height))"
+        }
+        return summary
     }
 
     func makeDownloadItem() -> DownloadItem {
@@ -193,6 +197,7 @@ final class VideoPreviewViewModel {
         item.ytDlpAudioFormatID = selectedYtDlpAudioFormatID
         if case .ytDlp(_, _, let option) = downloadResolution {
             item.ytDlpProcessing = option.processing
+            item.ytDlpPixelHeight = option.pixelHeight
         }
         return item
     }
